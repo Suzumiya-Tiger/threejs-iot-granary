@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      .tag {
+        box-shadow: 0 0 2px #00ffff inset;
+        background: linear-gradient(#00ffff, #00ffff) left top,
+          linear-gradient(#00ffff, #00ffff) left top,
+          linear-gradient(#00ffff, #00ffff) right bottom,
+          linear-gradient(#00ffff, #00ffff) right bottom;
+        background-repeat: no-repeat;
+        background-size: 1px 6px, 6px 1px;
+        background-color: rgba(0, 0, 0, 0.4);
+        color: #ffffff;
+        font-size: 16px;
+        padding: 4px 10px;
+      }
+    </style>
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div
+      id="messageTag"
+      style="
+        visibility: hidden;
+        position: absolute;
+        width: 375px;
+        height: 300px;
+        color: #fff;
+        z-index: 2;
+        font-size: 12px;
+      "
+    >
+      <div style="position: relative">
+        <div style="position: absolute; left: 0px; top: 0px">
+          <img
+            src="./src/assets/信息背景.png"
+            alt=""
+            style="width: 300px; opacity: 1"
+          />
+        </div>
+        <div
+          id="granaryName"
+          style="position: absolute; left: 18px; top: 30px; font-size: 12px"
+        >
+          平房仓 P_01
+        </div>
+        <div style="position: absolute; left: 218px; top: 18px">
+          <img src="./src/assets/温度.png" alt="" style="width: 38px" />
+        </div>
+        <div
+          id="temperature"
+          style="position: absolute; left: 248px; top: 30px; font-size: 12px"
+        >
+          19℃
+        </div>
+        <div
+          id="grain"
+          style="position: absolute; left: 128px; top: 38px; font-size: 12px"
+        >
+          红豆(吨)
+        </div>
+        <div
+          style="
+            position: absolute;
+            left: 60px;
+            top: 64px;
+            font-size: 45px;
+            color: #00ffff;
+            vertical-align: middle;
+          "
+        >
+          <img
+            id="grainImg"
+            src="./src/assets/豆子/红豆.png"
+            alt=""
+            style="width: 45px"
+          />
+        </div>
+        <div
+          id="weight"
+          style="
+            position: absolute;
+            left: 116px;
+            top: 60px;
+            font-size: 45px;
+            color: #00ffff;
+            vertical-align: middle;
+          "
+        >
+          3600 t
+        </div>
+        <div
+          id="granaryHeight"
+          style="
+            position: absolute;
+            left: 52px;
+            top: 128px;
+            padding: 6px 18px;
+            border-radius: 22px;
+            border: 1px solid #00ffff;
+            font-size: 12px;
+          "
+        >
+          仓高—12m
+        </div>
+        <div
+          id="grainHeight"
+          style="
+            position: absolute;
+            left: 168px;
+            top: 128px;
+            padding: 6px 18px;
+            font-size: 12px;
+          "
+        >
+          粮高— 5 m
+        </div>
+      </div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
