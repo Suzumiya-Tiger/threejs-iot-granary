@@ -22,10 +22,107 @@
         font-size: 16px;
         padding: 4px 10px;
       }
+
+      /* 修改：缩小提示面板样式 */
+      .info-panel {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        width: 220px;
+        background: linear-gradient(
+          135deg,
+          rgba(0, 255, 255, 0.1) 0%,
+          rgba(0, 0, 0, 0.8) 100%
+        );
+        border: 1px solid #00ffff;
+        border-radius: 8px;
+        padding: 10px;
+        color: #ffffff;
+        font-family: 'Arial', sans-serif;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        animation: fadeInSlide 1s ease-out;
+      }
+
+      .info-panel h3 {
+        margin: 0 0 8px 0;
+        color: #00ffff;
+        font-size: 14px;
+        text-align: center;
+        text-shadow: 0 0 8px #00ffff;
+      }
+
+      .info-panel ul {
+        margin: 0;
+        padding-left: 15px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .info-panel li {
+        margin-bottom: 5px;
+        color: #e0e0e0;
+      }
+
+      .info-panel .highlight {
+        color: #00ffff;
+        font-weight: bold;
+      }
+
+      .info-panel .close-btn {
+        position: absolute;
+        top: 5px;
+        right: 8px;
+        background: none;
+        border: none;
+        color: #00ffff;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.3s ease;
+      }
+
+      .info-panel .close-btn:hover {
+        color: #ffffff;
+        text-shadow: 0 0 5px #00ffff;
+      }
+
+      @keyframes fadeInSlide {
+        from {
+          opacity: 0;
+          transform: translateX(-50px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .info-panel.hidden {
+        display: none;
+      }
     </style>
-    <title>Vite App</title>
+    <title>物联网智慧粮仓</title>
   </head>
   <body>
+    <!-- 修改：缩小的操作提示面板 -->
+    <div id="infoPanel" class="info-panel">
+      <button class="close-btn" onclick="closeInfoPanel()">&times;</button>
+      <h3>💡 操作提示</h3>
+      <ul>
+        <li><span class="highlight">点击粮仓</span> 查看详情</li>
+        <li><span class="highlight">鼠标拖拽</span> 旋转视角</li>
+        <li><span class="highlight">滚轮</span> 缩放距离</li>
+        <li><span class="highlight">观察道路</span> 车辆行驶</li>
+      </ul>
+    </div>
+
     <div
       id="messageTag"
       style="
@@ -127,5 +224,13 @@
     </div>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
+
+    <script>
+      // 关闭提示面板的函数
+      function closeInfoPanel() {
+        const panel = document.getElementById('infoPanel');
+        panel.classList.add('hidden');
+      }
+    </script>
   </body>
 </html>

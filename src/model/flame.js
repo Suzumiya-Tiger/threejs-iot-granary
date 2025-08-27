@@ -50,10 +50,6 @@ function createFlame() {
   }
   updateLoop();
 
-  // 添加调试信息
-  console.log('火焰创建成功:', flame);
-  console.log('火焰位置:', flame.position);
-
   return flame;
 }
 

@@ -8,6 +8,8 @@ import { getTag } from './utils/messageTag.js';
 import messageData from './mocks/messageData.js';
 import { createFlame, stopFlame } from './model/flame.js';
 import TruckAnimation from './model/truckAnimation.js';
+import fvpAnimation from './model/fvp.js';
+
 const group = new THREE.Group();
 
 const loader = new GLTFLoader();
@@ -49,11 +51,9 @@ loader.load('./model.glb', gltf => {
     }
   }
   const roadModel = model.getObjectByName('马路');
-  console.log('roadModel', roadModel);
 
   const roadPos = new THREE.Vector3();
   roadModel.getWorldPosition(roadPos);
-  console.log('道路位置:', roadPos);
 
   // 创建卡车动画
   const truckAnimation = new TruckAnimation(group, roadPos, roadModel);
@@ -118,17 +118,32 @@ loader.load('./model.glb', gltf => {
     return flame;
   }
 
+  // 存储当前活跃的火焰，避免重复在同一个粮仓创建火焰
+  let activeFlames = new Map();
+  let flameSystemRunning = false;
+
   // 随机生成火焰效果
   function createRandomFlames() {
     // 从 granaryArr 中随机选择粮仓
     if (granaryArr.length > 0) {
-      // 随机选择1-3个粮仓
-      const flameCount = Math.floor(Math.random() * 3) + 1;
+      // 随机选择1-2个粮仓（减少同时出现的火焰数量）
+      const flameCount = Math.floor(Math.random() * 2) + 1;
       const selectedGranaries = [];
       const flames = [];
 
+      // 过滤掉已经有火焰的粮仓
+      const availableGranaries = granaryArr.filter(
+        granary => !activeFlames.has(granary.name)
+      );
+
+      if (availableGranaries.length === 0) {
+        return; // 如果所有粮仓都有火焰，跳过本次创建
+      }
+
       // 随机选择粮仓（避免重复）
-      const shuffledGranaries = [...granaryArr].sort(() => Math.random() - 0.5);
+      const shuffledGranaries = [...availableGranaries].sort(
+        () => Math.random() - 0.5
+      );
       for (let i = 0; i < Math.min(flameCount, shuffledGranaries.length); i++) {
         selectedGranaries.push(shuffledGranaries[i]);
       }
@@ -139,14 +154,25 @@ loader.load('./model.glb', gltf => {
         if (flame) {
           model.add(flame);
           flames.push(flame);
-          console.log(`为粮仓 ${granary.name} 添加火焰效果`);
+          // 记录活跃的火焰
+          activeFlames.set(granary.name, flame);
         }
       });
 
-      // 3秒后移除所有火焰
+      // 随机持续时间：5秒
+      const duration = Math.random() * 5000;
+
       setTimeout(() => {
         stopFlame();
         flames.forEach(flame => {
+          // 从活跃火焰列表中移除
+          const granaryName = selectedGranaries.find(
+            g => activeFlames.get(g.name) === flame
+          )?.name;
+          if (granaryName) {
+            activeFlames.delete(granaryName);
+          }
+
           // 如果火焰有关联的标签，先移除标签
           if (flame.tag) {
             flame.remove(flame.tag);
@@ -154,12 +180,51 @@ loader.load('./model.glb', gltf => {
           // 移除火焰本身
           model.remove(flame);
         });
-      }, 3000);
+      }, duration);
     }
   }
 
-  // 启动随机火焰效果
-  createRandomFlames();
+  // 持续的火焰管理系统
+  function startFlameSystem() {
+    if (flameSystemRunning) return;
+    flameSystemRunning = true;
+
+    function scheduleNextFlame() {
+      if (!flameSystemRunning) return;
+
+      // 随机间隔：3-8秒之间
+      const nextInterval = Math.random() * 5000 + 3000;
+
+      setTimeout(() => {
+        createRandomFlames();
+        scheduleNextFlame(); // 递归调度下一次火焰
+      }, nextInterval);
+    }
+
+    // 启动第一次火焰
+    scheduleNextFlame();
+  }
+
+  // 停止火焰系统的函数（可选，用于调试或特殊情况）
+  function stopFlameSystem() {
+    flameSystemRunning = false;
+    // 清理所有活跃的火焰
+    activeFlames.forEach((flame, granaryName) => {
+      if (flame.tag) {
+        flame.remove(flame.tag);
+      }
+      model.remove(flame);
+    });
+    activeFlames.clear();
+  }
+
+  // 将停止函数暴露到全局，方便调试
+  window.stopFlameSystem = stopFlameSystem;
+
+  setTimeout(() => {
+    // 启动持续的火焰系统
+    startFlameSystem();
+  }, 3000);
 
   addEventListener('click', function (e) {
     if (chooseMesh) {
@@ -212,6 +277,7 @@ loader.load('./model.glb', gltf => {
       messageTag.element.style.visibility = 'hidden';
     }
   });
+  fvpAnimation(group);
 });
 export { granaryArr };
 export default group;

@@ -52,7 +52,6 @@ class TruckAnimation {
       ];
     }
 
-    console.log('计算出的道路路径:', this.roadPath);
   }
   // 新增方法：根据方向和车道偏移计算具体路径
   calculateTruckPath(direction, laneOffset) {
@@ -116,7 +115,7 @@ class TruckAnimation {
         modelPath: './tesla_white_car_.glb',
         direction: 'forward',
         laneOffset: 7,
-        scale: 0.05,
+        scale: 0.04,
         speed: 1.2,
         delay: 3000,
         yOffset: 5, // Tesla 的 y 轴偏移
@@ -136,17 +135,13 @@ class TruckAnimation {
     let loadedCount = 0;
 
     vehicles.forEach((config, index) => {
-      console.log(`加载车辆: ${config.modelPath}`);
-
       loader.load(
         config.modelPath,
         gltf => {
-          console.log(`车辆加载完成: ${config.modelPath}`);
           this.createVehicle(gltf, config, index);
 
           loadedCount++;
           if (loadedCount === vehicles.length) {
-            console.log('所有车辆加载完成');
           }
         },
         undefined,
@@ -246,7 +241,6 @@ class TruckAnimation {
     this.mixers.push(mixer);
     action.play();
 
-    console.log(`车辆 ${config.modelPath} 开始动画`);
   }
 
   resetVehicle(vehicleData) {

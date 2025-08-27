@@ -7,23 +7,17 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { labelRenderer } from './utils/tag.js';
 // 导入自定义的网格模型
 import mesh from './mesh.js';
-import TruckAnimation from './model/truckAnimation.js';
 
 // 导入后处理系统
 import { initComposer, composer, fxaaPass } from './utils/choose.js';
 
-// 创建Three.js场景
 const scene = new THREE.Scene();
 
-// 将导入的模型添加到场景中
 scene.add(mesh);
 // 使用更细腻的指数雾
 const fog = new THREE.FogExp2(0xb0c4de, 0.0005); // 淡蓝灰色
 scene.fog = fog;
 
-// 内容需要改变的HTML元素对应的id
-
-// 环境光（柔和的全局照明）
 let ambientLight = new THREE.AmbientLight(0xffffff, 0.15); // 很微弱的环境光
 scene.add(ambientLight);
 
@@ -36,24 +30,21 @@ directionalLight.shadow.mapSize.height = 2048;
 scene.add(directionalLight);
 
 // HDR环境贴图 - 降低强度
-setTimeout(() => {
-  const rgbeLoader = new RGBELoader();
-  rgbeLoader.load('./qwantani_moonrise_puresky_4k.hdr', envMap => {
-    envMap.mapping = THREE.EquirectangularReflectionMapping;
+const rgbeLoader = new RGBELoader();
+rgbeLoader.load('./qwantani_moonrise_puresky_4k.hdr', envMap => {
+  envMap.mapping = THREE.EquirectangularReflectionMapping;
 
-    // 调整HDR环境光强度
-    scene.background = envMap;
-    scene.environment = envMap;
-    scene.environmentIntensity = 0.3; // 减少环境光强度到30%
+  // 调整HDR环境光强度
+  scene.background = envMap;
+  scene.environment = envMap;
+  scene.environmentIntensity = 0.3; // 减少环境光强度到30%
 
-    // 根据HDR环境调整雾的颜色，让它更融合
-    fog.color.setHex(0xa0b8d0); // 调整为与HDR更匹配的颜色
-  });
-}, 1000);
-
-// 创建坐标轴辅助器，长度为100，用于调试
+  // 根据HDR环境调整雾的颜色，让它更融合
+  fog.color.setHex(0xa0b8d0); // 调整为与HDR更匹配的颜色
+});
+/* // 创建坐标轴辅助器，长度为100，用于调试
 const helper = new THREE.AxesHelper(250);
-scene.add(helper);
+scene.add(helper); */
 
 // 获取浏览器窗口尺寸
 let width = window.innerWidth;
