@@ -17,17 +17,14 @@ scene.add(mesh);
 // 使用更细腻的指数雾
 const fog = new THREE.FogExp2(0xb0c4de, 0.0005); // 淡蓝灰色
 scene.fog = fog;
-
-let ambientLight = new THREE.AmbientLight(0xffffff, 0.15); // 很微弱的环境光
+// 当前使用了环境贴图，如果你需要使用环境光或者直射光源可以替换
+/* let ambientLight = new THREE.AmbientLight(0xffffff, 0.15); // 很微弱的环境光
 scene.add(ambientLight);
 
-// 添加主光源 - 模拟太阳光
-const directionalLight = new THREE.DirectionalLight(0xfff5e6, 0.4); // 暖色调，适中强度
+// 光源设置
+const directionalLight = new THREE.DirectionalLight(0xfff5e6, 5);
 directionalLight.position.set(200, 300, 100);
-directionalLight.castShadow = true; // 启用阴影
-directionalLight.shadow.mapSize.width = 2048;
-directionalLight.shadow.mapSize.height = 2048;
-scene.add(directionalLight);
+directionalLight.castShadow = true; */
 
 // HDR环境贴图 - 降低强度
 const rgbeLoader = new RGBELoader();
@@ -37,7 +34,7 @@ rgbeLoader.load('./qwantani_moonrise_puresky_4k.hdr', envMap => {
   // 调整HDR环境光强度
   scene.background = envMap;
   scene.environment = envMap;
-  scene.environmentIntensity = 0.3; // 减少环境光强度到30%
+  scene.environmentIntensity = 0.5; // 减少环境光强度到50%
 
   // 根据HDR环境调整雾的颜色，让它更融合
   fog.color.setHex(0xa0b8d0); // 调整为与HDR更匹配的颜色
@@ -96,10 +93,6 @@ controls.dampingFactor = 0.05; // 降低阻尼系数，减少卡顿
 controls.rotateSpeed = 1.0;
 controls.zoomSpeed = 1.0;
 controls.panSpeed = 1.0;
-
-// 限制旋转的范围
-// 更新控制器
-controls.update();
 
 // 在渲染循环中更新状态显示
 function render() {

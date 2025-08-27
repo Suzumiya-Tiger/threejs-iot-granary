@@ -19,7 +19,7 @@ function createFlame() {
   // 1/nums:从图像上截取一帧的火焰截图，总共15个帧数对应的状态截图
   fireTexture.repeat.set(1 / nums, 1);
 
-  const fireMaterial = new THREE.MeshBasicMaterial({
+  const fireMaterial = new THREE.MeshLambertMaterial({
     map: fireTexture,
     // png透明
     transparent: true,

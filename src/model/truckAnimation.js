@@ -43,17 +43,9 @@ class TruckAnimation {
           { x: this.roadPosition.x, z: box.max.z - size.z * 0.1 }, // 终点
         ];
       }
-    } else {
-      // 默认路径（如果没有道路模型信息）
-      this.roadPath = [
-        { x: this.roadPosition.x - 150, z: this.roadPosition.z }, // 起点
-        { x: this.roadPosition.x, z: this.roadPosition.z }, // 中点
-        { x: this.roadPosition.x + 150, z: this.roadPosition.z }, // 终点
-      ];
     }
-
   }
-  // 新增方法：根据方向和车道偏移计算具体路径
+  // 根据方向和车道偏移计算具体路径
   calculateTruckPath(direction, laneOffset) {
     if (direction === 'forward') {
       // 正向行驶：从起点到终点
@@ -91,7 +83,6 @@ class TruckAnimation {
   }
 
   loadTruck() {
-    // 简化配置 - 添加 yOffset 参数
     const vehicles = [
       {
         modelPath: './truck.glb',
@@ -100,7 +91,7 @@ class TruckAnimation {
         scale: 3,
         speed: 1,
         delay: 0,
-        yOffset: 7, // 卡车的 y 轴偏移
+        yOffset: 7, // 卡车的 y 轴向上偏移
       },
       {
         modelPath: './aston_martin_v8_vantage_v600.glb',
@@ -135,32 +126,17 @@ class TruckAnimation {
     let loadedCount = 0;
 
     vehicles.forEach((config, index) => {
-      loader.load(
-        config.modelPath,
-        gltf => {
-          this.createVehicle(gltf, config, index);
+      loader.load(config.modelPath, gltf => {
+        this.createVehicle(gltf, config, index);
 
-          loadedCount++;
-          if (loadedCount === vehicles.length) {
-          }
-        },
-        undefined,
-        error => {
-          console.error(`车辆加载失败 ${config.modelPath}:`, error);
-          loadedCount++;
-        }
-      );
+        loadedCount++;
+      });
     });
   }
 
   createVehicle(gltf, config, index) {
     const vehicle = gltf.scene.clone();
     vehicle.scale.set(config.scale, config.scale, config.scale);
-
-    // 如果有旋转配置，应用旋转
-    if (config.rotationY !== undefined) {
-      vehicle.rotation.y = config.rotationY;
-    }
 
     // 计算路径
     const path = this.calculateTruckPath(config.direction, config.laneOffset);
@@ -240,7 +216,6 @@ class TruckAnimation {
 
     this.mixers.push(mixer);
     action.play();
-
   }
 
   resetVehicle(vehicleData) {

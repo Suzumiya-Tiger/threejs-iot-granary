@@ -50,6 +50,7 @@ loader.load('./model.glb', gltf => {
       });
     }
   }
+  // 获取马路坐标，为汽车动画提供对应坐标
   const roadModel = model.getObjectByName('马路');
 
   const roadPos = new THREE.Vector3();
@@ -60,7 +61,7 @@ loader.load('./model.glb', gltf => {
 
   // 将动画更新函数导出，以便在主渲染循环中调用
   window.truckAnimation = truckAnimation;
-
+// 获取父对象 粮仓，里面有各个类型不一的子对象粮仓
   const farmGroup = gltf.scene.getObjectByName('粮仓');
   farmGroup.traverse(obj => {
     if (obj.type === 'Mesh') {
@@ -84,6 +85,7 @@ loader.load('./model.glb', gltf => {
       } else if (obj.parent.name === '平房仓') {
         pos.y += 17;
       }
+      // 把粮仓标签添加到粮仓上
       label.position.copy(pos);
       group.add(label);
     }
