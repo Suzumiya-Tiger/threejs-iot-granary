@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 class TruckAnimation {
-  constructor(scene, roadPosition) {
+  constructor(scene, roadPosition, roadModel = null) {
     this.scene = scene;
     this.roadPosition = roadPosition.clone();
+    this.roadModel = roadModel;
     this.truck = null;
     this.mixer = null;
     this.isAnimating = false;
@@ -14,148 +15,288 @@ class TruckAnimation {
     this.animationDuration = 10; // 10秒完成一次移动
     this.waitTime = 5; // 5秒等待时间
 
-    // 道路路径点（需要根据实际道路调整）
-    this.roadPath = [
-      { x: this.roadPosition.x - 100, z: this.roadPosition.z }, // 起点
-      { x: this.roadPosition.x, z: this.roadPosition.z }, // 中点
-      { x: this.roadPosition.x + 100, z: this.roadPosition.z }, // 终点
-    ];
+    // 根据道路模型计算路径，如果没有模型则使用默认值
+    this.calculateRoadPath();
 
     this.loadTruck();
   }
 
-  loadTruck() {
-    const loader = new GLTFLoader();
-    loader.load(
-      './truck.glb',
-      gltf => {
-        this.truck = gltf.scene;
+  calculateRoadPath() {
+    if (this.roadModel) {
+      // 获取道路模型的边界框
+      const box = new THREE.Box3().setFromObject(this.roadModel);
+      const size = box.getSize(new THREE.Vector3());
 
-        // 调整卡车大小和初始位置
-        this.truck.scale.set(2, 2, 2); // 根据需要调整大小
-        this.truck.position.set(
-          this.roadPath[0].x,
-          this.roadPosition.y + 1, // 稍微抬高避免与地面重叠
-          this.roadPath[0].z
-        );
-
-        // 设置初始朝向（朝向道路终点）
-        this.truck.lookAt(
-          this.roadPath[2].x,
-          this.roadPosition.y,
-          this.roadPath[2].z
-        );
-
-        this.scene.add(this.truck);
-        console.log('卡车模型加载完成');
-
-        // 开始动画循环
-        this.startAnimationLoop();
-      },
-      undefined,
-      error => {
-        console.error('卡车模型加载失败:', error);
+      // 根据道路的尺寸来确定路径方向
+      if (size.x > size.z) {
+        // 道路沿 x 轴方向延伸
+        this.roadPath = [
+          { x: box.min.x + size.x * 0.1, z: this.roadPosition.z }, // 起点
+          { x: this.roadPosition.x, z: this.roadPosition.z }, // 中点
+          { x: box.max.x - size.x * 0.1, z: this.roadPosition.z }, // 终点
+        ];
+      } else {
+        // 道路沿 z 轴方向延伸
+        this.roadPath = [
+          { x: this.roadPosition.x, z: box.min.z + size.z * 0.1 }, // 起点
+          { x: this.roadPosition.x, z: this.roadPosition.z }, // 中点
+          { x: this.roadPosition.x, z: box.max.z - size.z * 0.1 }, // 终点
+        ];
       }
-    );
+    } else {
+      // 默认路径（如果没有道路模型信息）
+      this.roadPath = [
+        { x: this.roadPosition.x - 150, z: this.roadPosition.z }, // 起点
+        { x: this.roadPosition.x, z: this.roadPosition.z }, // 中点
+        { x: this.roadPosition.x + 150, z: this.roadPosition.z }, // 终点
+      ];
+    }
+
+    console.log('计算出的道路路径:', this.roadPath);
+  }
+  // 新增方法：根据方向和车道偏移计算具体路径
+  calculateTruckPath(direction, laneOffset) {
+    if (direction === 'forward') {
+      // 正向行驶：从起点到终点
+      return {
+        start: {
+          x: this.roadPath[0].x,
+          z: this.roadPath[0].z + laneOffset,
+        },
+        middle: {
+          x: this.roadPath[1].x,
+          z: this.roadPath[1].z + laneOffset,
+        },
+        end: {
+          x: this.roadPath[2].x,
+          z: this.roadPath[2].z + laneOffset,
+        },
+      };
+    } else {
+      // 反向行驶：从终点到起点
+      return {
+        start: {
+          x: this.roadPath[2].x,
+          z: this.roadPath[2].z + laneOffset,
+        },
+        middle: {
+          x: this.roadPath[1].x,
+          z: this.roadPath[1].z + laneOffset,
+        },
+        end: {
+          x: this.roadPath[0].x,
+          z: this.roadPath[0].z + laneOffset,
+        },
+      };
+    }
   }
 
-  startAnimationLoop() {
-    if (!this.truck || this.isAnimating) return;
+  loadTruck() {
+    // 简化配置 - 添加 yOffset 参数
+    const vehicles = [
+      {
+        modelPath: './truck.glb',
+        direction: 'forward',
+        laneOffset: 7,
+        scale: 3,
+        speed: 1,
+        delay: 0,
+        yOffset: 7, // 卡车的 y 轴偏移
+      },
+      {
+        modelPath: './aston_martin_v8_vantage_v600.glb',
+        direction: 'backward',
+        laneOffset: -7,
+        scale: 4,
+        speed: 1.2,
+        delay: 3000,
+        yOffset: 0.5, // 阿斯顿马丁的 y 轴偏移
+      },
+      {
+        modelPath: './tesla_white_car_.glb',
+        direction: 'forward',
+        laneOffset: 7,
+        scale: 0.05,
+        speed: 1.2,
+        delay: 3000,
+        yOffset: 5, // Tesla 的 y 轴偏移
+        rotationY: -Math.PI / 2, // 添加 Y 轴旋转来修正朝向
+      },
+    ];
 
-    this.isAnimating = true;
-    console.log('开始卡车动画');
+    this.vehicles = [];
+    this.mixers = [];
 
-    // 创建关键帧动画
-    this.createMovementAnimation();
+    // 直接加载车辆
+    this.loadVehicles(vehicles);
   }
 
-  createMovementAnimation() {
-    // 创建位置关键帧
+  loadVehicles(vehicles) {
+    const loader = new GLTFLoader();
+    let loadedCount = 0;
+
+    vehicles.forEach((config, index) => {
+      console.log(`加载车辆: ${config.modelPath}`);
+
+      loader.load(
+        config.modelPath,
+        gltf => {
+          console.log(`车辆加载完成: ${config.modelPath}`);
+          this.createVehicle(gltf, config, index);
+
+          loadedCount++;
+          if (loadedCount === vehicles.length) {
+            console.log('所有车辆加载完成');
+          }
+        },
+        undefined,
+        error => {
+          console.error(`车辆加载失败 ${config.modelPath}:`, error);
+          loadedCount++;
+        }
+      );
+    });
+  }
+
+  createVehicle(gltf, config, index) {
+    const vehicle = gltf.scene.clone();
+    vehicle.scale.set(config.scale, config.scale, config.scale);
+
+    // 如果有旋转配置，应用旋转
+    if (config.rotationY !== undefined) {
+      vehicle.rotation.y = config.rotationY;
+    }
+
+    // 计算路径
+    const path = this.calculateTruckPath(config.direction, config.laneOffset);
+
+    // 使用配置的 yOffset
+    const vehicleY = this.roadPosition.y + config.yOffset;
+
+    // 设置初始位置
+    vehicle.position.set(path.start.x, vehicleY, path.start.z);
+
+    // 设置朝向（如果没有预设旋转的话）
+    if (config.rotationY === undefined) {
+      vehicle.lookAt(path.end.x, vehicleY, path.end.z);
+    }
+
+    this.scene.add(vehicle);
+
+    // 保存车辆数据
+    const vehicleData = {
+      mesh: vehicle,
+      config: config,
+      path: path,
+      index: index,
+    };
+
+    this.vehicles.push(vehicleData);
+
+    // 直接开始动画（带延迟）
+    if (config.delay > 0) {
+      setTimeout(() => {
+        this.startVehicleAnimation(vehicleData);
+      }, config.delay);
+    } else {
+      this.startVehicleAnimation(vehicleData);
+    }
+  }
+
+  startVehicleAnimation(vehicleData) {
+    const { mesh, config, path, index } = vehicleData;
+    const duration = this.animationDuration / config.speed;
+
+    // 使用配置的 yOffset
+    const vehicleY = this.roadPosition.y + config.yOffset;
+
+    // 创建动画
     const positionKeyframes = new THREE.VectorKeyframeTrack(
       '.position',
-      [0, this.animationDuration / 2, this.animationDuration], // 时间点
+      [0, duration / 2, duration],
       [
-        // 起点
-        this.roadPath[0].x,
-        this.roadPosition.y + 1,
-        this.roadPath[0].z,
-        // 中点
-        this.roadPath[1].x,
-        this.roadPosition.y + 1,
-        this.roadPath[1].z,
-        // 终点
-        this.roadPath[2].x,
-        this.roadPosition.y + 1,
-        this.roadPath[2].z,
+        path.start.x,
+        vehicleY,
+        path.start.z,
+        path.middle.x,
+        vehicleY,
+        path.middle.z,
+        path.end.x,
+        vehicleY,
+        path.end.z,
       ]
     );
 
-    // 创建动画剪辑
-    const clip = new THREE.AnimationClip(
-      'truckMovement',
-      this.animationDuration,
-      [positionKeyframes]
-    );
+    const clip = new THREE.AnimationClip(`vehicle_${index}`, duration, [
+      positionKeyframes,
+    ]);
+    const mixer = new THREE.AnimationMixer(mesh);
+    const action = mixer.clipAction(clip);
 
-    // 创建动画混合器
-    this.mixer = new THREE.AnimationMixer(this.truck);
-    const action = this.mixer.clipAction(clip);
-
-    // 设置动画只播放一次
     action.setLoop(THREE.LoopOnce);
     action.clampWhenFinished = true;
 
-    // 动画完成后的回调
-    this.mixer.addEventListener('finished', () => {
-      console.log('卡车到达终点，等待5秒后重新开始');
+    // 动画完成后重新开始
+    mixer.addEventListener('finished', () => {
       setTimeout(() => {
-        this.resetTruckPosition();
+        this.resetVehicle(vehicleData);
       }, this.waitTime * 1000);
     });
 
-    // 开始播放动画
+    this.mixers.push(mixer);
     action.play();
+
+    console.log(`车辆 ${config.modelPath} 开始动画`);
   }
 
-  resetTruckPosition() {
-    if (!this.truck) return;
+  resetVehicle(vehicleData) {
+    const { mesh, config } = vehicleData;
 
-    // 重置卡车到起点
-    this.truck.position.set(
-      this.roadPath[0].x,
-      this.roadPosition.y + 1,
-      this.roadPath[0].z
-    );
+    // 重新计算路径
+    const path = this.calculateTruckPath(config.direction, config.laneOffset);
+    vehicleData.path = path;
 
-    // 重置朝向
-    this.truck.lookAt(
-      this.roadPath[2].x,
-      this.roadPosition.y,
-      this.roadPath[2].z
-    );
+    // 使用配置的 yOffset
+    const vehicleY = this.roadPosition.y + config.yOffset;
 
-    this.isAnimating = false;
+    // 重置位置
+    mesh.position.set(path.start.x, vehicleY, path.start.z);
 
-    // 重新开始动画循环
-    this.startAnimationLoop();
+    // 重置朝向（如果没有预设旋转）
+    if (config.rotationY === undefined) {
+      mesh.lookAt(path.end.x, vehicleY, path.end.z);
+    }
+
+    // 重新开始动画
+    this.startVehicleAnimation(vehicleData);
   }
 
-  // 更新动画（需要在渲染循环中调用）
+  // 更新动画（在渲染循环中调用）
   update() {
-    if (this.mixer) {
+    if (this.mixers) {
       const delta = this.clock.getDelta();
-      this.mixer.update(delta);
+      this.mixers.forEach(mixer => {
+        if (mixer) {
+          mixer.update(delta);
+        }
+      });
     }
   }
 
-  // 停止动画
+  // 停止所有动画
   stop() {
-    this.isAnimating = false;
-    if (this.mixer) {
-      this.mixer.stopAllAction();
+    if (this.mixers) {
+      this.mixers.forEach(mixer => {
+        if (mixer) {
+          mixer.stopAllAction();
+        }
+      });
     }
-    if (this.truck && this.scene) {
-      this.scene.remove(this.truck);
+
+    if (this.vehicles && this.scene) {
+      this.vehicles.forEach(vehicleData => {
+        this.scene.remove(vehicleData.mesh);
+      });
     }
   }
 

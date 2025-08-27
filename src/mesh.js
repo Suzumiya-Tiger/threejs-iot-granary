@@ -36,13 +36,10 @@ loader.load('./model.glb', gltf => {
   groundTexture.repeat.set(4, 4);
 
   const model = gltf.scene;
-  console.log('model', model);
 
   // getObjectByName能够穿透子对象找到对应的目标模型
   const targetModel = model.getObjectByName('平原');
   if (targetModel) {
-    console.log('targetModel', targetModel);
-
     const targetMesh = targetModel;
     // 如果是Mesh，直接替换材质
     if (targetMesh.type === 'Mesh') {
@@ -59,7 +56,7 @@ loader.load('./model.glb', gltf => {
   console.log('道路位置:', roadPos);
 
   // 创建卡车动画
-  const truckAnimation = new TruckAnimation(group, roadPos);
+  const truckAnimation = new TruckAnimation(group, roadPos, roadModel);
 
   // 将动画更新函数导出，以便在主渲染循环中调用
   window.truckAnimation = truckAnimation;
@@ -96,7 +93,6 @@ loader.load('./model.glb', gltf => {
   function granaryFlame(name) {
     const granary = gltf.scene.getObjectByName(name);
     if (!granary) {
-      console.log(`找不到名为 ${name} 的粮仓模型`);
       return null;
     }
 
@@ -113,7 +109,6 @@ loader.load('./model.glb', gltf => {
       flame.position.y += 17;
     }
     flame.position.y += -4;
-    console.log(`为 ${name} 创建火焰，位置:`, flame.position);
 
     // 火焰警示标签
     const fireMessageTag = tag('警告⚠️：粮仓' + name + '失火');
@@ -155,13 +150,10 @@ loader.load('./model.glb', gltf => {
           // 如果火焰有关联的标签，先移除标签
           if (flame.tag) {
             flame.remove(flame.tag);
-            console.log('移除火焰标签');
           }
           // 移除火焰本身
           model.remove(flame);
-          console.log('移除火焰效果');
         });
-        console.log('所有火焰效果已清除');
       }, 3000);
     }
   }
