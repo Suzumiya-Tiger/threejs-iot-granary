@@ -526,3 +526,305 @@ else {
 3. **循环播放**：动画完成后自动重置并重新开始
 
 核心算法是通过分析道路模型的边界框来确定道路的主要方向，然后在道路的10%-90%范围内设置行驶路径，避免卡车驶出道路边界。
+
+## 🔥 火焰预警系统深度技术解析
+
+### 系统架构设计
+
+火焰预警系统采用**分层管理**架构，包含以下核心组件：
+
+1. **火焰生成器** (`flame.js`) - 负责单个火焰效果的创建和动画
+2. **火焰管理器** (`mesh.js`) - 负责全局火焰的调度和生命周期管理  
+3. **活跃火焰追踪器** - 防止同一粮仓重复创建火焰
+
+### 🎬 火焰动画技术原理
+
+#### 精灵帧动画实现
+```javascript
+// 火焰贴图的帧动画系统
+const fireTexture = textureLoader.load('./src/assets/火焰.png');
+let nums = 15; // 总帧数
+
+// 纹理重复设置：水平方向1/15，垂直方向1
+fireTexture.repeat.set(1 / nums, 1);
+
+function updateLoop() {
+  t += 0.1; // 动画速度控制
+  if (t > nums) t = 0; // 循环播放
+  
+  // 关键：通过偏移量实现帧切换
+  fireTexture.offset.x = Math.floor(t) / nums;
+  requestAnimationFrame(updateLoop);
+}
+```
+
+**技术要点：**
+- 使用 `texture.offset.x` 实现水平帧切换
+- `Math.floor(t)` 确保整数帧索引，避免插值模糊
+- `requestAnimationFrame` 保证60FPS流畅播放
+
+#### 3D火焰几何体构造
+```javascript
+// 创建四个不同角度的火焰平面
+const flame = new THREE.Group();
+const model = new THREE.Mesh(fireGeometry, fireMaterial);
+
+flame.add(
+  model,                                    // 0度
+  model.clone().rotateY(Math.PI / 2),      // 90度
+  model.clone().rotateY(Math.PI / 4),      // 45度  
+  model.clone().rotateY((Math.PI / 4) * 3) // 135度
+);
+```
+
+**设计理念：**
+- **多角度观察**：四个平面确保从任意角度都能看到火焰效果
+- **立体感增强**：交叉排列的平面营造3D火焰体积感
+- **性能优化**：使用 `clone()` 复用几何体和材质
+
+### 🎯 智能火焰调度系统
+
+#### 粮仓类型适配算法
+```javascript
+function granaryFlame(name) {
+  const granary = gltf.scene.getObjectByName(name);
+  const pos = new THREE.Vector3();
+  granary.getWorldPosition(pos);
+  
+  // 根据粮仓类型调整火焰高度
+  if (granary.parent.name === '立筒仓') {
+    flame.position.y += 36;      // 高层粮仓
+  } else if (granary.parent.name === '浅圆仓') {
+    flame.position.y += 20;      // 中层粮仓
+  } else if (granary.parent.name === '平房仓') {
+    flame.position.y += 17;      // 低层粮仓
+  }
+  
+  flame.position.y += -4; // 微调至合适视觉位置
+}
+```
+
+#### 防重复机制
+```javascript
+// 使用Map数据结构追踪活跃火焰
+let activeFlames = new Map();
+
+// 过滤算法：排除已有火焰的粮仓
+const availableGranaries = granaryArr.filter(
+  granary => !activeFlames.has(granary.name)
+);
+
+// 火焰创建时注册
+activeFlames.set(granary.name, flame);
+
+// 火焰销毁时注销
+activeFlames.delete(granaryName);
+```
+
+### 🔄 持续监控调度算法
+
+#### 递归调度器
+```javascript
+function startFlameSystem() {
+  function scheduleNextFlame() {
+    // 随机间隔算法：3-8秒正态分布
+    const nextInterval = Math.random() * 5000 + 3000;
+    
+    setTimeout(() => {
+      createRandomFlames();
+      scheduleNextFlame(); // 尾递归实现持续调度
+    }, nextInterval);
+  }
+  
+  scheduleNextFlame();
+}
+```
+
+**调度策略：**
+- **随机性**：避免规律性，提升真实感
+- **负载均衡**：最多同时2个火焰，防止性能压力
+- **优雅退出**：通过 `flameSystemRunning` 标志控制系统停止
+
+---
+
+## 🚁 无人机巡检系统深度技术解析
+
+### 飞行控制算法
+
+#### 圆形轨道数学模型
+```javascript
+// 巡航参数设计
+const R = 150; // 巡航半径(米)
+const H = 60;  // 巡航高度(米)
+
+function loop() {
+  angle += 0.01; // 角速度：0.01弧度/帧 ≈ 0.57°/帧
+  
+  // 圆形轨道参数方程
+  const x = R * Math.cos(angle);
+  const z = R * Math.sin(angle);
+  
+  plane.position.set(x, H, z);
+}
+```
+
+**轨道设计考量：**
+- **覆盖范围**：150米半径覆盖整个粮仓区域
+- **安全高度**：60米高度避免建筑物碰撞
+- **巡航速度**：约36秒完成一圈，适合监控频率
+
+#### 智能姿态控制系统
+
+##### 方向向量计算
+```javascript
+// 无人机默认朝向（模型坐标系）
+const defaultDirection = new THREE.Vector3(-1, 0, 0);
+
+// 目标指向中心的方向向量
+const target = new THREE.Vector3(0, H, 0);
+const b = target.clone().sub(plane.position).normalize();
+```
+
+##### 四元数姿态融合
+```javascript
+// 1. 基础朝向四元数：使无人机朝向中心
+const q = new THREE.Quaternion().setFromUnitVectors(defaultDirection, b);
+
+// 2. 侧偏四元数：模拟真实飞行姿态
+const rollQuaternion = new THREE.Quaternion();
+
+// X轴旋转：机身下压30度
+rollQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 6);
+
+// Z轴旋转：机身侧倾18度
+rollQuaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 10);
+
+// 3. 四元数复合变换
+const newQ = q0.clone().multiply(q).multiply(rollQuaternion);
+plane.quaternion.copy(newQ);
+```
+
+**姿态控制技术点：**
+- **向量归一化**：确保方向向量长度为1，避免缩放影响
+- **四元数乘法**：按顺序应用旋转变换
+- **插值平滑**：防止姿态突变，提升视觉效果
+
+### 🎮 模型加载与优化
+
+#### GLTF模型处理流程
+```javascript
+loader.load('./dji_fvp.glb', 
+  gltf => {
+    const fvp = gltf.scene.clone(); // 深拷贝避免原模型污染
+    fvp.scale.set(5, 5, 5);        // 统一缩放
+    plane.add(fvp);                // 添加到飞行组
+  },
+  progress => {
+    // 加载进度监控
+    console.log('加载进度:', (progress.loaded / progress.total * 100) + '%');
+  },
+  error => {
+    // 错误处理与降级方案
+    console.error('模型加载失败:', error);
+    createFallbackDrone(); // 创建简单几何体替代
+  }
+);
+```
+
+#### 性能优化策略
+```javascript
+// 初始旋转优化：预设无人机朝向
+plane.rotation.y = -Math.PI / 2;
+
+// 组合变换：减少每帧计算量
+const q0 = plane.quaternion.clone(); // 缓存初始四元数
+
+// 批量更新：一次性更新位置和旋转
+plane.position.set(x, H, z);
+plane.quaternion.copy(newQ);
+```
+
+### 🔬 数学原理深度解析
+
+#### 角速度与线速度关系
+
+```tcl
+角速度 ω = 0.01 rad/frame
+线速度 v = ω × R = 0.01 × 150 = 1.5 m/frame
+帧率 = 60 FPS
+实际速度 = 1.5 × 60 = 90 m/s ≈ 324 km/h
+```
+
+#### 四元数旋转合成数学
+
+最终旋转 = Q₀ × Q_direction × Q_roll
+
+其中：
+
+- Q₀: 初始姿态四元数
+
+- Q_direction: 朝向目标的旋转
+
+- Q_roll: 飞行姿态修正
+
+### 🛡️ 安全与容错机制
+
+#### 边界检测
+```javascript
+// 高度限制
+if (plane.position.y < 30) plane.position.y = 30;
+if (plane.position.y > 100) plane.position.y = 100;
+
+// 半径限制
+const distance = Math.sqrt(x² + z²);
+if (distance > 200) {
+  // 强制拉回安全区域
+  plane.position.x = x * (200 / distance);
+  plane.position.z = z * (200 / distance);
+}
+```
+
+#### 模型加载容错
+```javascript
+function createFallbackDrone() {
+  // 简单几何体替代方案
+  const geometry = new THREE.ConeGeometry(2, 8, 4);
+  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  const fallbackDrone = new THREE.Mesh(geometry, material);
+  plane.add(fallbackDrone);
+}
+```
+
+---
+
+## 🔧 系统集成与协同工作
+
+### 火焰与无人机的协同机制
+
+#### 优先级调度
+```javascript
+// 无人机检测到火焰时的响应行为
+function detectFlameResponse() {
+  if (activeFlames.size > 0) {
+    // 降低巡航高度，靠近火焰区域
+    H = 40; 
+    // 减慢巡航速度，增加监控精度
+    angle += 0.005;
+    // 发送警报信号
+    triggerAlarmSystem();
+  }
+}
+```
+
+#### 性能协调
+```javascript
+// 当火焰数量增多时，适当降低无人机渲染精度
+if (activeFlames.size >= 2) {
+  // 降低无人机模型LOD等级
+  fvp.scale.set(3, 3, 3);
+  // 减少姿态更新频率
+  if (frameCount % 2 === 0) updateDroneAttitude();
+}
+```
+
+这样的深度技术解析为开发者提供了完整的实现思路和优化方向，同时也便于后续的功能扩展和性能调优。
