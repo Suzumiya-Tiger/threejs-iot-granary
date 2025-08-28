@@ -425,7 +425,7 @@
         }
       }
 
-      // 更新加载进度
+      // 智能进度更新
       function updateProgress(progress, status = '') {
         const circle = document.getElementById('progressCircle');
         const text = document.getElementById('progressText');
@@ -437,6 +437,17 @@
         circle.style.strokeDashoffset = offset;
         text.textContent = Math.round(progress) + '%';
         if (status) statusElement.textContent = status;
+
+        // 进度条颜色变化
+        if (progress < 30) {
+          circle.style.stroke = 'url(#progressGradient)';
+        } else if (progress < 70) {
+          circle.style.stroke = '#00ff88';
+        } else if (progress < 90) {
+          circle.style.stroke = '#ffaa00';
+        } else {
+          circle.style.stroke = '#00ffff';
+        }
       }
 
       // 隐藏加载界面

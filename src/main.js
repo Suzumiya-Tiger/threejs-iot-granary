@@ -15,42 +15,95 @@ import { resourceManager } from './utils/resourceManager.js';
 // 在模块顶层声明变量
 let camera = null;
 let renderer = null;
+let scene = null;
+let isSceneReady = false;
 
-// 设置加载进度回调
-resourceManager.setProgressCallback(progress => {
-  window.updateProgress(progress, getLoadingStatus(progress));
-});
+// 智能进度状态管理
+const loadingState = {
+  currentPhase: 'initialization',
+  phases: {
+    initialization: { min: 0, max: 30, status: '初始化系统...' },
+    coreLoading: { min: 30, max: 70, status: '加载核心资源...' },
+    sceneSetup: { min: 70, max: 85, status: '初始化场景...' },
+    finalizing: { min: 85, max: 100, status: '准备就绪...' },
+  },
+};
 
-function getLoadingStatus(progress) {
-  if (progress < 30) return '加载场景模型...';
-  if (progress < 60) return '加载环境贴图...';
-  if (progress < 80) return '初始化渲染器...';
-  if (progress < 95) return '加载车辆模型...';
-  return '准备就绪...';
+// 智能进度更新函数
+function updateSmartProgress(progress, phase, phaseProgress) {
+  let displayProgress = progress;
+  let status = '';
+
+  // 根据当前阶段调整显示进度和状态
+  if (progress < 30) {
+    // 初始化阶段 - 缓慢增长到30%
+    displayProgress = Math.min(progress, 29);
+    status = '初始化系统...';
+  } else if (progress < 70) {
+    // 核心资源加载阶段
+    status = '加载场景模型...';
+    if (phase === 'high') {
+      if (phaseProgress < 33) status = '加载主场景模型...';
+      else if (phaseProgress < 66) status = '加载HDR环境贴图...';
+      else status = '加载地面纹理...';
+    }
+  } else if (progress < 85) {
+    // 场景设置阶段
+    status = '初始化渲染器...';
+  } else {
+    // 最终准备阶段
+    status = '启动应用...';
+  }
+
+  // 如果到了临界进度但资源还没加载完，就停在临界点前
+  if (progress >= 30 && loadingState.currentPhase === 'initialization') {
+    displayProgress = 29;
+    status = '等待资源加载...';
+  }
+
+  window.updateProgress(displayProgress, status);
 }
 
-// 场景初始化
-async function initScene() {
+// 设置资源加载进度回调
+resourceManager.setProgressCallback(updateSmartProgress);
+
+// 设置阶段完成回调
+resourceManager.setPhaseCompleteCallback(phase => {
+  console.log(`✅ 阶段完成: ${phase}`);
+
+  if (phase === 'high') {
+    loadingState.currentPhase = 'coreLoading';
+    // 核心资源加载完成，可以开始初始化场景
+    initializeBaseScene();
+  }
+});
+
+// 初始化基础场景 (核心资源加载完成后)
+async function initializeBaseScene() {
   try {
-    // 开始按优先级加载资源
-    await resourceManager.loadByPriority();
+    console.log('🎬 开始初始化基础场景...');
+    updateSmartProgress(75, '', '');
 
     // 创建场景
-    const scene = new THREE.Scene();
+    scene = new THREE.Scene();
     scene.add(mesh);
 
     const fog = new THREE.FogExp2(0xb0c4de, 0.0005);
     scene.fog = fog;
 
-    // HDR环境贴图
-    const rgbeLoader = new RGBELoader();
-    rgbeLoader.load('./qwantani_moonrise_puresky_2k.hdr', envMap => {
-      envMap.mapping = THREE.EquirectangularReflectionMapping;
-      scene.background = envMap;
-      scene.environment = envMap;
+    // 设置HDR环境贴图
+    const hdrTexture = resourceManager.getResource(
+      './qwantani_moonrise_puresky_2k.hdr'
+    );
+    if (hdrTexture) {
+      hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+      scene.background = hdrTexture;
+      scene.environment = hdrTexture;
       scene.environmentIntensity = 0.5;
       fog.color.setHex(0xa0b8d0);
-    });
+    }
+
+    updateSmartProgress(80, '', '');
 
     // 相机和渲染器设置
     let width = window.innerWidth;
@@ -66,13 +119,13 @@ async function initScene() {
 
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     document.body.appendChild(renderer.domElement);
 
     initComposer(renderer, scene);
+
+    updateSmartProgress(85, '', '');
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0, 0);
@@ -119,26 +172,63 @@ async function initScene() {
         1 / (height * pixelRatio);
     });
 
-    // 场景初始化完成，开始渲染
+    // 场景基础初始化完成，开始渲染
     render();
+    isSceneReady = true;
 
-    // 延迟隐藏loading，确保渲染稳定
-    setTimeout(() => {
-      window.updateProgress(100, '加载完成');
-      setTimeout(() => {
-        window.hideLoading();
-      }, 500);
+    console.log('✅ 基础场景初始化完成');
+    updateSmartProgress(90, '', '');
+
+    // 开始加载中等优先级资源 (延迟1秒)
+    setTimeout(async () => {
+      await resourceManager.loadMediumResources();
+      console.log('🚛 卡车模型已可用');
     }, 1000);
 
-    return { camera, renderer };
+    // 开始加载低优先级资源 (延迟3秒)
+    setTimeout(async () => {
+      await resourceManager.loadLowResources();
+      console.log('🎨 所有装饰性模型已可用');
+
+      // 所有资源加载完成
+      finalizeLoading();
+    }, 3000);
   } catch (error) {
     console.error('场景初始化失败:', error);
-    window.updateProgress(100, '加载失败，请刷新重试');
+    window.updateProgress(100, '初始化失败，请刷新重试');
+  }
+}
+
+// 完成加载并隐藏Loading
+function finalizeLoading() {
+  updateSmartProgress(100, '', '加载完成');
+
+  setTimeout(() => {
+    window.hideLoading();
+    console.log('🎉 应用完全加载完成');
+  }, 800);
+}
+
+// 启动应用的主函数
+async function startApplication() {
+  try {
+    console.log('🚀 启动物联网智慧粮仓系统...');
+
+    // 开始完整的资源加载流程
+    const loadingResult = await resourceManager.loadAllResources();
+
+    if (loadingResult.coreComplete) {
+      console.log('✅ 核心资源加载完成，场景已可用');
+      // 注意：场景初始化已经在阶段完成回调中触发
+    }
+  } catch (error) {
+    console.error('应用启动失败:', error);
+    window.updateProgress(100, '加载失败，请刷新页面重试');
   }
 }
 
 // 启动应用
-initScene();
+startApplication();
 
 // 导出模块级变量
-export { camera, renderer };
+export { camera, renderer, scene, isSceneReady };
