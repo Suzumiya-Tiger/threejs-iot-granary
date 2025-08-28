@@ -44,7 +44,7 @@ async function initScene() {
 
     // HDR环境贴图
     const rgbeLoader = new RGBELoader();
-    rgbeLoader.load('./qwantani_moonrise_puresky_4k.hdr', envMap => {
+    rgbeLoader.load('./qwantani_moonrise_puresky_2k.hdr', envMap => {
       envMap.mapping = THREE.EquirectangularReflectionMapping;
       scene.background = envMap;
       scene.environment = envMap;

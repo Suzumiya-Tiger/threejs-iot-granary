@@ -21,14 +21,14 @@ class ResourceManager {
       // 高优先级：场景基础资源
       high: [
         './model.glb',
-        './qwantani_moonrise_puresky_4k.hdr',
+        './qwantani_moonrise_puresky_2k.hdr',
         './wispy-grass-meadow_albedo.png',
       ],
       // 中优先级：基础车辆
       medium: ['./truck.glb'],
       // 低优先级：装饰性车辆
       low: [
-        './tesla_white_car_.glb',
+        './tesla_model_x.glb',
         './aston_martin_v8_vantage_v600.glb',
         './dji_fvp.glb',
       ],

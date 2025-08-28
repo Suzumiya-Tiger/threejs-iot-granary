@@ -103,14 +103,14 @@ class TruckAnimation {
         yOffset: 0.5, // 阿斯顿马丁的 y 轴偏移
       },
       {
-        modelPath: './tesla_white_car_.glb',
+        modelPath: './tesla_model_x.glb',
         direction: 'forward',
-        laneOffset: 7,
-        scale: 0.04,
+        laneOffset: 11,
+        scale: 0.004,
         speed: 1.2,
         delay: 3000,
-        rotationY: Math.PI,
-        yOffset: 5, // Tesla 的 y 轴偏移
+        rotationY: -Math.PI * 2,
+        yOffset: 0, // Tesla 的 y 轴偏移
       },
     ];
 

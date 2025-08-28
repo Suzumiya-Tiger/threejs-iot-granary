@@ -144,7 +144,7 @@ directionalLight.shadow.mapSize.height = 2048;
 **3. HDR环境贴图**
 ```javascript
 const rgbeLoader = new RGBELoader();
-rgbeLoader.load('./qwantani_moonrise_puresky_4k.hdr', envMap => {
+rgbeLoader.load('./qwantani_moonrise_puresky_2k.hdr', envMap => {
   envMap.mapping = THREE.EquirectangularReflectionMapping;
   scene.background = envMap;
   scene.environment = envMap;
@@ -851,14 +851,14 @@ if (activeFlames.size >= 2) {
 const resourcePriority = {
   high: [     // 核心场景资源 - 优先加载
     './model.glb',
-    './qwantani_moonrise_puresky_4k.hdr',
+    './qwantani_moonrise_puresky_2k.hdr',
     './wispy-grass-meadow_albedo.png'
   ],
   medium: [   // 基础功能资源 - 延迟1秒加载
     './truck.glb'
   ],
   low: [      // 装饰性资源 - 延迟3秒加载
-    './tesla_white_car_.glb',
+    './tesla_model_x.glb',
     './aston_martin_v8_vantage_v600.glb',
     './dji_fvp.glb'
   ]
@@ -1010,7 +1010,7 @@ async function loadCoreResources() {
   const mainModel = await resourceManager.loadGLTF('./model.glb');
   
   updateProgress(40, '加载HDR环境贴图...');
-  const hdrEnv = await resourceManager.loadHDR('./qwantani_moonrise_puresky_4k.hdr');
+  const hdrEnv = await resourceManager.loadHDR('./qwantani_moonrise_puresky_2k.hdr');
   
   updateProgress(60, '加载地面纹理...');
   const groundTexture = await loadTexture('./wispy-grass-meadow_albedo.png');
@@ -1188,7 +1188,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
 # 服务端配置关键资源推送
 location / {
     http2_push /model.glb;
-    http2_push /qwantani_moonrise_puresky_4k.hdr;
+    http2_push /qwantani_moonrise_puresky_2k.hdr;
 }
 ```
 
