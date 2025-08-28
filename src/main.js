@@ -138,6 +138,14 @@ async function initializeBaseScene() {
     controls.zoomSpeed = 1.0;
     controls.panSpeed = 1.0;
 
+    // 设置垂直旋转限制 - 防止相机低于地面
+    controls.maxPolarAngle = Math.PI / 2 - 0.05; // 限制最大极角，稍微高于水平线
+    controls.minPolarAngle = Math.PI / 6; // 限制最小极角，不能太向上看
+
+    // 可选：设置水平旋转限制（如果需要的话）
+    // controls.minAzimuthAngle = -Math.PI / 2; // 限制水平旋转的最小角度
+    // controls.maxAzimuthAngle = Math.PI / 2;  // 限制水平旋转的最大角度
+
     // 渲染循环
     function render() {
       controls.update();
