@@ -8,7 +8,160 @@
       body {
         margin: 0;
         overflow: hidden;
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont,
+          sans-serif;
       }
+
+      /* 高质量Loading样式 */
+      .loading-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(
+          135deg,
+          #0f172a 0%,
+          #1e293b 50%,
+          #334155 100%
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      }
+
+      .loading-container.fade-out {
+        opacity: 0;
+        transform: scale(1.1);
+        pointer-events: none;
+      }
+
+      .loading-content {
+        text-align: center;
+        color: white;
+      }
+
+      .loading-title {
+        font-size: 2.5rem;
+        font-weight: 300;
+        margin-bottom: 1rem;
+        background: linear-gradient(45deg, #00ffff, #0080ff, #00ffff);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: titleShimmer 3s ease-in-out infinite;
+      }
+
+      .loading-subtitle {
+        font-size: 1rem;
+        color: #94a3b8;
+        margin-bottom: 3rem;
+        opacity: 0.8;
+      }
+
+      /* 3D圆环进度条 */
+      .progress-ring {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 2rem;
+      }
+
+      .progress-ring svg {
+        transform: rotate(-90deg);
+        width: 100%;
+        height: 100%;
+      }
+
+      .progress-ring-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.1);
+        stroke-width: 4;
+      }
+
+      .progress-ring-fill {
+        fill: none;
+        stroke: url(#progressGradient);
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 283; /* 2 * PI * r (r=45) */
+        stroke-dashoffset: 283;
+        transition: stroke-dashoffset 0.3s ease;
+        filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.6));
+      }
+
+      .progress-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #00ffff;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      }
+
+      /* 加载状态文本 */
+      .loading-status {
+        font-size: 0.9rem;
+        color: #64748b;
+        min-height: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      /* 粒子效果背景 */
+      .particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        z-index: -1;
+      }
+
+      .particle {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: rgba(0, 255, 255, 0.6);
+        border-radius: 50%;
+        animation: float 6s infinite linear;
+      }
+
+      /* 动画定义 */
+      @keyframes titleShimmer {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(100vh) rotate(0deg);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-10vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      /* 现有样式保持不变 */
       .tag {
         box-shadow: 0 0 2px #00ffff inset;
         background: linear-gradient(#00ffff, #00ffff) left top,
@@ -23,7 +176,6 @@
         padding: 4px 10px;
       }
 
-      /* 修改：缩小提示面板样式 */
       .info-panel {
         position: fixed;
         top: 15px;
@@ -111,7 +263,46 @@
     <title>物联网智慧粮仓</title>
   </head>
   <body>
-    <!-- 修改：缩小的操作提示面板 -->
+    <!-- 高质量Loading界面 -->
+    <div id="loadingContainer" class="loading-container">
+      <div class="particles" id="particles"></div>
+
+      <div class="loading-content">
+        <h1 class="loading-title">智慧粮仓</h1>
+        <p class="loading-subtitle">IoT Granary Monitoring System</p>
+
+        <div class="progress-ring">
+          <svg viewBox="0 0 100 100">
+            <defs>
+              <linearGradient
+                id="progressGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+              >
+                <stop offset="0%" style="stop-color: #00ffff" />
+                <stop offset="50%" style="stop-color: #0080ff" />
+                <stop offset="100%" style="stop-color: #00ffff" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" class="progress-ring-bg" />
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              class="progress-ring-fill"
+              id="progressCircle"
+            />
+          </svg>
+          <div class="progress-center" id="progressText">0%</div>
+        </div>
+
+        <div class="loading-status" id="loadingStatus">初始化系统...</div>
+      </div>
+    </div>
+
+    <!-- 现有内容保持不变 -->
     <div id="infoPanel" class="info-panel">
       <button class="close-btn" onclick="closeInfoPanel()">&times;</button>
       <h3>💡 操作提示</h3>
@@ -120,9 +311,12 @@
         <li><span class="highlight">鼠标拖拽</span> 旋转视角</li>
         <li><span class="highlight">滚轮</span> 缩放距离</li>
         <li><span class="highlight">观察道路</span> 车辆行驶</li>
+        <li><span class="highlight">🔥 火焰报警</span> 自动预警</li>
+        <li><span class="highlight">🚁 无人机</span> 持续巡检</li>
       </ul>
     </div>
 
+    <!-- 其他现有内容... -->
     <div
       id="messageTag"
       style="
@@ -137,11 +331,7 @@
     >
       <div style="position: relative">
         <div style="position: absolute; left: 0px; top: 0px">
-          <img
-            src="./src/assets/信息背景.png"
-            alt=""
-            style="width: 300px; opacity: 1"
-          />
+          <img src="./信息背景.png" alt="" style="width: 300px; opacity: 1" />
         </div>
         <div
           id="granaryName"
@@ -150,7 +340,7 @@
           平房仓 P_01
         </div>
         <div style="position: absolute; left: 218px; top: 18px">
-          <img src="./src/assets/温度.png" alt="" style="width: 38px" />
+          <img src="./温度.png" alt="" style="width: 38px" />
         </div>
         <div
           id="temperature"
@@ -174,12 +364,7 @@
             vertical-align: middle;
           "
         >
-          <img
-            id="grainImg"
-            src="./src/assets/豆子/红豆.png"
-            alt=""
-            style="width: 45px"
-          />
+          <img id="grainImg" src="./豆子/红豆.png" alt="" style="width: 45px" />
         </div>
         <div
           id="weight"
@@ -222,15 +407,59 @@
         </div>
       </div>
     </div>
+
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
 
     <script>
-      // 关闭提示面板的函数
+      // 粒子效果
+      function createParticles() {
+        const container = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = Math.random() * 100 + '%';
+          particle.style.animationDelay = Math.random() * 6 + 's';
+          particle.style.animationDuration = Math.random() * 3 + 3 + 's';
+          container.appendChild(particle);
+        }
+      }
+
+      // 更新加载进度
+      function updateProgress(progress, status = '') {
+        const circle = document.getElementById('progressCircle');
+        const text = document.getElementById('progressText');
+        const statusElement = document.getElementById('loadingStatus');
+
+        const circumference = 2 * Math.PI * 45;
+        const offset = circumference - (progress / 100) * circumference;
+
+        circle.style.strokeDashoffset = offset;
+        text.textContent = Math.round(progress) + '%';
+        if (status) statusElement.textContent = status;
+      }
+
+      // 隐藏加载界面
+      function hideLoading() {
+        const container = document.getElementById('loadingContainer');
+        container.classList.add('fade-out');
+        setTimeout(() => {
+          container.style.display = 'none';
+        }, 800);
+      }
+
+      // 关闭提示面板
       function closeInfoPanel() {
         const panel = document.getElementById('infoPanel');
         panel.classList.add('hidden');
       }
+
+      // 初始化
+      createParticles();
+
+      // 暴露给模块使用
+      window.updateProgress = updateProgress;
+      window.hideLoading = hideLoading;
     </script>
   </body>
 </html>

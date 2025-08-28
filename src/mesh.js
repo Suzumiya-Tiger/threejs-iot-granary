@@ -61,7 +61,7 @@ loader.load('./model.glb', gltf => {
 
   // 将动画更新函数导出，以便在主渲染循环中调用
   window.truckAnimation = truckAnimation;
-// 获取父对象 粮仓，里面有各个类型不一的子对象粮仓
+  // 获取父对象 粮仓，里面有各个类型不一的子对象粮仓
   const farmGroup = gltf.scene.getObjectByName('粮仓');
   farmGroup.traverse(obj => {
     if (obj.type === 'Mesh') {
@@ -161,8 +161,8 @@ loader.load('./model.glb', gltf => {
         }
       });
 
-      // 随机持续时间：5秒
-      const duration = Math.random() * 5000;
+      // 修改持续时间：8-15秒之间的随机时长
+      const duration = Math.random() * 7000 + 8000; // 8-15秒
 
       setTimeout(() => {
         stopFlame();
@@ -194,8 +194,8 @@ loader.load('./model.glb', gltf => {
     function scheduleNextFlame() {
       if (!flameSystemRunning) return;
 
-      // 随机间隔：3-8秒之间
-      const nextInterval = Math.random() * 5000 + 3000;
+      // 调整随机间隔：5-12秒之间（给火焰更长的展示时间）
+      const nextInterval = Math.random() * 7000 + 1000;
 
       setTimeout(() => {
         createRandomFlames();

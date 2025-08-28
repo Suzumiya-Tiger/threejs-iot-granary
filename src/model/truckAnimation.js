@@ -109,8 +109,8 @@ class TruckAnimation {
         scale: 0.04,
         speed: 1.2,
         delay: 3000,
+        rotationY: Math.PI,
         yOffset: 5, // Tesla 的 y 轴偏移
-        rotationY: -Math.PI / 2, // 添加 Y 轴旋转来修正朝向
       },
     ];
 
@@ -140,15 +140,19 @@ class TruckAnimation {
 
     // 计算路径
     const path = this.calculateTruckPath(config.direction, config.laneOffset);
-
-    // 使用配置的 yOffset
     const vehicleY = this.roadPosition.y + config.yOffset;
 
     // 设置初始位置
     vehicle.position.set(path.start.x, vehicleY, path.start.z);
 
-    // 设置朝向（如果没有预设旋转的话）
-    if (config.rotationY === undefined) {
+    // 修改这部分：先设置朝向，再应用额外的旋转
+    if (config.rotationY !== undefined) {
+      // 首先让车辆朝向目标点
+      vehicle.lookAt(path.end.x, vehicleY, path.end.z);
+      // 然后在Y轴上添加额外的旋转
+      vehicle.rotation.y += config.rotationY;
+    } else {
+      // 只设置朝向
       vehicle.lookAt(path.end.x, vehicleY, path.end.z);
     }
 
@@ -231,8 +235,14 @@ class TruckAnimation {
     // 重置位置
     mesh.position.set(path.start.x, vehicleY, path.start.z);
 
-    // 重置朝向（如果没有预设旋转）
-    if (config.rotationY === undefined) {
+    // 重置朝向和旋转
+    if (config.rotationY !== undefined) {
+      // 首先让车辆朝向目标点
+      mesh.lookAt(path.end.x, vehicleY, path.end.z);
+      // 然后在Y轴上添加额外的旋转
+      mesh.rotation.y += config.rotationY;
+    } else {
+      // 只设置朝向
       mesh.lookAt(path.end.x, vehicleY, path.end.z);
     }
 
