@@ -14,6 +14,11 @@ class SimpleResourceManager {
     this.totalFiles = 0;
     this.loadedFiles = 0;
     this.onProgress = null;
+
+    // 添加模拟进度相关变量
+    this.simulatedProgress = 0;
+    this.realProgress = 0;
+    this.isSimulating = false;
   }
 
   // 设置进度回调
@@ -21,11 +26,46 @@ class SimpleResourceManager {
     this.onProgress = callback;
   }
 
-  // 更新进度
+  // 开始模拟进度 - 缓慢增长到25%
+  startSimulatedProgress() {
+    if (this.isSimulating) return;
+
+    this.isSimulating = true;
+    this.simulatedProgress = 0;
+
+    const simulate = () => {
+      if (this.simulatedProgress < 25) {
+        // 每次增长0.5-1.5%，比较缓慢
+        this.simulatedProgress += Math.random() * 1 + 0.5;
+        this.simulatedProgress = Math.min(this.simulatedProgress, 25);
+
+        // 只有当真实进度还没超过模拟进度时才使用模拟值
+        if (this.realProgress < this.simulatedProgress && this.onProgress) {
+          this.onProgress(this.simulatedProgress);
+        }
+
+        // 间隔300-600ms，让进度条看起来在缓慢移动
+        setTimeout(simulate, 300 + Math.random() * 300);
+      }
+    };
+
+    simulate();
+  }
+
+  // 更新真实进度
   updateProgress() {
-    if (this.onProgress && this.totalFiles > 0) {
-      const progress = (this.loadedFiles / this.totalFiles) * 100;
-      this.onProgress(Math.min(progress, 100));
+    if (this.totalFiles > 0) {
+      this.realProgress = (this.loadedFiles / this.totalFiles) * 100;
+
+      // 使用真实进度和模拟进度中的较大值
+      const displayProgress = Math.max(
+        this.realProgress,
+        this.simulatedProgress
+      );
+
+      if (this.onProgress) {
+        this.onProgress(Math.min(displayProgress, 100));
+      }
     }
   }
 
@@ -124,6 +164,9 @@ class SimpleResourceManager {
 
     this.totalFiles = resources.length;
     this.loadedFiles = 0;
+
+    // 开始模拟进度
+    this.startSimulatedProgress();
 
     const promises = resources.map(url => {
       if (url.endsWith('.glb')) {
