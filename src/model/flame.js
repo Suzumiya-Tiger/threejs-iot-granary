@@ -14,9 +14,7 @@ function createFlame() {
   // 加载火焰效果
   const fireTexture = textureLoader.load(
     './火焰.png',
-    texture => {
-      console.log('火焰贴图加载成功');
-    },
+    texture => {},
     undefined,
     error => {
       console.error('火焰贴图加载失败:', error);
@@ -70,7 +68,6 @@ function createFlame() {
 function stopFlame() {
   if (stopAnimationFrame) {
     window.cancelAnimationFrame(stopAnimationFrame);
-    console.log('火焰动画已停止');
   }
 }
 
